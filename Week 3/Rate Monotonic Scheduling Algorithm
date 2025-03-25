@@ -1,0 +1,117 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX_TASKS 10
+
+typedef struct
+{
+    int id;             // Task identifier
+    int period;         // Task period (time units)
+    int execution_time; // Computation time required per period
+    int remaining_time; // Remaining execution time for current job
+} Task;
+
+// Comparison function to sort tasks by period (shorter period = higher priority)
+int compare_tasks(const void *a, const void *b)
+{
+    Task *t1 = (Task *)a;
+    Task *t2 = (Task *)b;
+    return t1->period - t2->period;
+}
+
+// Compute greatest common divisor
+int gcd(int a, int b)
+{
+    while (b != 0)
+    {
+        int temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
+
+// Compute least common multiple of two numbers
+int lcm(int a, int b)
+{
+    return (a * b) / gcd(a, b);
+}
+
+// Simulate execution of one unit of a task
+void execute_task(Task *task, int time)
+{
+    printf("Time %3d: Executing Task %d\n", time, task->id);
+    task->remaining_time--;
+}
+
+int main(void)
+{
+    int n;
+    printf("Enter number of tasks: ");
+    scanf("%d", &n);
+
+    if (n > MAX_TASKS)
+    {
+        printf("Number of tasks exceeds maximum (%d).\n", MAX_TASKS);
+        return 1;
+    }
+
+    Task tasks[MAX_TASKS];
+
+    // Input task parameters: id, period, execution_time
+    for (int i = 0; i < n; i++)
+    {
+        printf("Enter Task %d (id period execution_time): ", i + 1);
+        scanf("%d %d %d", &tasks[i].id, &tasks[i].period, &tasks[i].execution_time);
+        tasks[i].remaining_time = tasks[i].execution_time; // Initialize remaining time
+    }
+
+    // Sort tasks based on period (shorter period means higher priority)
+    qsort(tasks, n, sizeof(Task), compare_tasks);
+
+    // Calculate hyperperiod (LCM of all task periods)
+    int hyperperiod = tasks[0].period;
+    for (int i = 1; i < n; i++)
+    {
+        hyperperiod = lcm(hyperperiod, tasks[i].period);
+    }
+    printf("\nHyperperiod = %d time units\n\n", hyperperiod);
+
+    // Simulation loop over the hyperperiod
+    for (int time = 0; time < hyperperiod; time++)
+    {
+        // Check for task arrivals: if current time is a multiple of the period, reset task execution time
+        for (int i = 0; i < n; i++)
+        {
+            if (time % tasks[i].period == 0)
+            {
+                tasks[i].remaining_time = tasks[i].execution_time;
+                // Uncomment the line below to print task arrival events
+                // printf("Time %3d: Task %d arrives\n", time, tasks[i].id);
+            }
+        }
+
+        // Select the highest-priority ready task (tasks are already sorted by period)
+        Task *current_task = NULL;
+        for (int i = 0; i < n; i++)
+        {
+            if (tasks[i].remaining_time > 0)
+            {
+                current_task = &tasks[i];
+                break;
+            }
+        }
+
+        // Execute the selected task or remain idle if none are ready
+        if (current_task != NULL)
+        {
+            execute_task(current_task, time);
+        }
+        else
+        {
+            printf("Time %3d: Idle\n", time);
+        }
+    }
+
+    return 0;
+}
